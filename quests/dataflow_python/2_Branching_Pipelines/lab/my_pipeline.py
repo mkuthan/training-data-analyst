@@ -14,6 +14,9 @@ def parse_json(element):
     return json.loads(element)
 
 # TODO: Define drop_fields function.
+def drop_fields(element):
+    element.pop('user_agent')
+    return element
 
 # ### main
 
@@ -25,6 +28,9 @@ def run():
     parser.add_argument('--runner', required=True, help='Specify Apache Beam Runner')
 
     # TODO: Add command-line arguments for input path, output path and table name
+    parser.add_argument('--inputPath', required=True, help='Path to events.json')
+    parser.add_argument('--outputPath', required=True, help='Path to coldline storage bucket')
+    parser.add_argument('--tableName', required=True, help='BigQuery table name')
 
     opts, pipeline_opts = parser.parse_known_args()
 
@@ -37,6 +43,10 @@ def run():
 
     # TODO: Set variables equal to input_path, output_path and table_name from
     # argumnent parser
+    input_path = opts.inputPath
+    output_path = opts.outputPath
+    table_name = opts.tableName
+
 
     # Table schema for BigQuery
     table_schema = {
@@ -89,13 +99,17 @@ def run():
     '''
 
     # TODO: Refactor pipeline to branch, with one branch writing directly to GCS
+    lines = p | 'ReadFromGCS' >> beam.io.ReadFromText(input_path)
 
-    (p
-        | 'ReadFromGCS' >> beam.io.ReadFromText(input)
+    lines | 'WriteRawToGCS' >> beam.io.WriteToText(output_path)
+
+    (lines
         | 'ParseJson' >> beam.Map(parse_json)
+        | 'DropFields' >> beam.Map(drop_fields)
+        | 'FilterFn' >> beam.Filter(lambda row: row['num_bytes'] < 100)
         # TODO: Apply filter to elements
         | 'WriteToBQ' >> beam.io.WriteToBigQuery(
-            output,
+            table_name,
             schema=table_schema,
             create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED,
             write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE
