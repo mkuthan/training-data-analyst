@@ -108,7 +108,7 @@ def run():
     (lines
         | 'ParseJson' >> beam.Map(parse_json)
         | 'DropFields' >> beam.Map(drop_fields)
-        | 'FilterFn' >> beam.Filter(lambda row: row['num_bytes'] < 100)
+        | 'FilterFn' >> beam.Filter(lambda row: row['num_bytes'] < 120)
         # TODO: Apply filter to elements
         | 'WriteToBQ' >> beam.io.WriteToBigQuery(
             table_name,
