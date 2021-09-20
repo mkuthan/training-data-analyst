@@ -61,11 +61,13 @@ def run():
             },
             {
                 "name": "lat",
-                "type": "FLOAT"
+                "type": "FLOAT",
+                "mode": "NULLABLE"
             },
             {
                 "name": "lng",
-                "type": "FLOAT"
+                "type": "FLOAT",
+                "mode": "NULLABLE"
             },
             {
                 "name": "timestamp",
