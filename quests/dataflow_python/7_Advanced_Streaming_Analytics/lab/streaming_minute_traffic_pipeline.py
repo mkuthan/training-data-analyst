@@ -36,7 +36,7 @@ class ConvertToCommonLogFn(beam.DoFn):
         yield beam.pvalue.TaggedOutput('parsed_row', CommonLog(**row))
     except:
         element = element.decode('utf-8')
-        yield beam.pvalue.TaggedOutput('unparsed_row', element.decode('utf-8'))
+        yield beam.pvalue.TaggedOutput('unparsed_row', element)
 
 
 class GetTimestampFn(beam.DoFn):
