@@ -154,7 +154,7 @@ def run():
         )
 
     (parsed_msgs
-        | "WindowByMinute" >> beam.WindowInto(beam.window.FixedWindows(60))
+        | "WindowByMinute" >> beam.WindowInto(beam.window.FixedWindows(window_duration))
         | "CountPerMinute" >> beam.CombineGlobally(CountCombineFn()).without_defaults()
         | "AddWindowTimestamp" >> beam.ParDo(GetTimestampFn())
         | 'WriteAggToBQ' >> beam.io.WriteToBigQuery(
