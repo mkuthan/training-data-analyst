@@ -33,7 +33,9 @@ def parse_json(element):
     return CommonLog(**row)
 
 def format_timestamp(element):
-    # TODO: Add formatted timestamp as a string.
+    ts = datetime.strptime(element.ts[:-8], "%Y-%m-%dT%H:%M:%S")
+    ts = datetime.strftime(ts, "%Y-%m-%d %H:%M:%S")
+
     temp_dict = element._asdict()
     temp_dict['ts'] = ts
     return CommonLog(**temp_dict)
@@ -86,7 +88,15 @@ def run():
     }
 
     query = '''
-        # TODO: Write SQL Query
+SELECT
+    COUNT(*) AS page_views,
+    STRING(window_start) AS start_time
+FROM
+    TUMBLE(
+        (SELECT TIMESTAMP(ts) AS ts FROM PCOLLECTION),
+        DESCRIPTOR(ts),
+        'INTERVAL 1 MINUTE')
+GROUP BY window_start
     '''
 
     # Create the pipeline
@@ -95,7 +105,7 @@ def run():
     (p | 'ReadFromGCS' >> beam.io.ReadFromText(input_path)
        | 'ParseJson' >> beam.Map(parse_json).with_output_types(CommonLog)
        | 'FormatTimestamp' >> beam.Map(format_timestamp).with_output_types(CommonLog)
-       | "CountPerMinute" >> # TODO: Use SqlTransform with ZetaSQL dialect
+       | "CountPerMinute" >> SqlTransform(query, dialect='zetasql')
        | "ConvertToDict" >> beam.Map(to_dict)
        | 'WriteToBQ' >> beam.io.WriteToBigQuery(
             table_name,
