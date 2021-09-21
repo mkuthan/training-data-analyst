@@ -71,7 +71,7 @@ def run():
     input_topic = opts.input_topic
     raw_table_name = opts.raw_table_name
     agg_table_name = opts.agg_table_name
-    window_duration = opts.window_duration
+    window_duration = int(opts.window_duration)
 
     # Table schema for BigQuery
     agg_table_schema = {
