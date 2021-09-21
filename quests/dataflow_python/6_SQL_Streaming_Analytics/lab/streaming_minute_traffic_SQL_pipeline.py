@@ -41,8 +41,8 @@ class ParseAndGetEventTimestamp(beam.PTransform):
     def expand(self, pcoll):
         return (
             pcoll
-            | 'ParseJson' >> # TODO: Apply parse_json function
-            | 'GetEventTimestamp' >> # TODO: Apply GetEventTimestampFn DoFn.
+            | 'ParseJson' >> beam.Map(parse_json)
+            | 'GetEventTimestamp' >> beam.ParDo(GetEventTimestampFn())
             )
 
 def to_dict(row):
@@ -92,13 +92,23 @@ def run():
         ]
     }
 
-    query = # TODO: Write SQL Query
+    query = """
+SELECT
+    COUNT(*) AS page_views,
+    STRING(window_start) AS start_time
+FROM
+    TUMBLE(
+        (SELECT TIMESTAMP(event_timestamp) AS ts FROM PCOLLECTION),
+        DESCRIPTOR(ts),
+        'INTERVAL 1 MINUTE')
+GROUP BY window_start
+    """
 
     # Create the pipeline
     p = beam.Pipeline(options=options)
 
-    (p | 'ReadFromPubSub' >> # TODO: Read from Pub/Sub Topic
-       | 'ParseAndGetEventTimestamp' >> # TODO: Apply ParseAndGetEventTimestamp custom PTransform with output type CommonLog
+    (p | 'ReadFromPubSub' >> beam.io.ReadFromPubSub(input_topic)
+       | 'ParseAndGetEventTimestamp' >> ParseAndGetEventTimestamp().with_output_types(CommonLog)
        | "CountPerMinute" >> SqlTransform(query, dialect='zetasql')
        | "ConvertToDict" >> beam.Map(to_dict)
        | 'WriteAggToBQ' >> beam.io.WriteToBigQuery(
