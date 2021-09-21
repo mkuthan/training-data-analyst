@@ -145,13 +145,13 @@ def run():
     logs = (p | 'ReadFromGCS' >> beam.io.ReadFromText(input_path)
               | 'ParseJson' >> beam.Map(parse_json).with_output_types(CommonLog))
 
-    logs | 'RawToDict' >> beam.Map(lambda row : row._asdict())
-    logs | 'WriteRawToBQ' >> beam.io.WriteToBigQuery(
-        raw_table_name,
-        schema=raw_table_schema,
-        create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED,
-        write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE
-    )
+    (logs | 'RawToDict' >> beam.Map(lambda row : row._asdict())
+          | 'WriteRawToBQ' >> beam.io.WriteToBigQuery(
+            raw_table_name,
+            schema=raw_table_schema,
+            create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED,
+            write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE)
+     )
 
     (logs | 'PerUserAggregations' >> SqlTransform(query, dialect='zetasql')
           | 'AggToDict' >> beam.Map(lambda row : row._asdict())
